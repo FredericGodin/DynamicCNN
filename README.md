@@ -5,6 +5,11 @@ This is a Theano implementation of the paper "A Convolutional Neural Network for
 The example included is that of binary movie review sentiment classification (Stanford Sentiment Treebank).
 I was able to achieve a test set accuracy of 85-86% which is just below the reported accuracy of 86.8%.
 
+### Using it
+To run it, simply run trainDCNN.py.
+If you are only interested in the layers such as Dynamic K-max pooling, or the 1D convolution, only use the DCNN package.
+
+
 ### Paper issues
 Not all training details are clear from the paper. 
 A Matlab implementation is provided by the authors but that implementation is different from the paper.
