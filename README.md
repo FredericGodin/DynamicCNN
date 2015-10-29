@@ -1,7 +1,7 @@
 # Dynamic Convolutional Neural Networks
 
 ### Introduction
-This is a Theano implementation of the paper "A Convolutional Neural Network for Modelling Sentences" (<a href="http://nal.co/papers/Kalchbrenner_DCNN_ACL14">click here</a>.
+This is a Theano implementation of the paper "A Convolutional Neural Network for Modelling Sentences" (<a href="http://nal.co/papers/Kalchbrenner_DCNN_ACL14">click here</a>).
 The example included is that of binary movie review sentiment classification (Stanford Sentiment Treebank).
 I was able to achieve a test set accuracy of 85-86% which is just below the reported accuracy of 86.8%.
 
@@ -25,5 +25,5 @@ In the paper, some layer types were introduced which are not trivial for Theano.
 (2) Dynamic K-max pooling. Currently an argsort operation is used which is executed on the CPU. 
 However, this operation is too heavy for selecting the K max values.
 
-Because of these implementations, a very heavy GpuContiguous operation is automatically introduced somewhere.
+Because of these implementation issues, a very heavy GpuContiguous operation is automatically introduced somewhere.
 If you have a solution or comments, I'm happy to support pull request ;)
