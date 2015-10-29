@@ -44,7 +44,7 @@ def buildDCNNPaper(batch_size,vocab_size,embeddings_size=48,filter_sizes=[10,7],
     l_pool1 = DCNN.pooling.DynamicKMaxPoolLayer(l_fold1,ktop,nroflayers=2,layernr=1)
 
 
-    l_nonlinear1 = DCNN.simplelayers.NonLinearLayer(l_pool1,activation=parseActivation(activations[0]))
+    l_nonlinear1 = lasagne.layers.NonlinearityLayer(l_pool1,nonlinearity=parseActivation(activations[0]))
 
     l_conv2 = DCNN.convolutions.Conv1DLayerSplitted(
         l_nonlinear1,
@@ -58,7 +58,7 @@ def buildDCNNPaper(batch_size,vocab_size,embeddings_size=48,filter_sizes=[10,7],
 
     l_pool2 = DCNN.pooling.KMaxPoolLayer(l_fold2,ktop)
 
-    l_nonlinear2 = DCNN.simplelayers.NonLinearLayer(l_pool2,activation=parseActivation(activations[1]))
+    l_nonlinear2 = lasagne.layers.NonlinearityLayer(l_pool2,nonlinearity=parseActivation(activations[1]))
 
     l_dropout2=lasagne.layers.DropoutLayer(l_nonlinear2,p=dropout)
 

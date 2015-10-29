@@ -47,33 +47,28 @@ print('Loading the training data')
 # load data, taken from Kalchbrenner matlab files
 # we order the input according to length and pad all sentences until the maximum length
 # at training time however, we will use the "length" array to shrink that matrix following the largest sentence within a batch
-# in practice, this means that batches are padded with 1 or 2, or aren't even padded at all.
+# in practice, this means that batches are padded with 1 or 2 zeros, or aren't even padded at all.
 kalchbrenner_path = "./data/binarySentiment/"
-new_train_x_indexes, new_train_y, train_lengths = dataUtils.read_and_sort_matlab_data(kalchbrenner_path+"train.txt",kalchbrenner_path+"train_lbl.txt")
-new_dev_x_indexes, new_dev_y, dev_lengths = dataUtils.read_and_sort_matlab_data(kalchbrenner_path+"valid.txt",kalchbrenner_path+"valid_lbl.txt")
-new_test_x_indexes, new_test_y, test_lengths = dataUtils.read_and_sort_matlab_data(kalchbrenner_path+"test.txt",kalchbrenner_path+"test_lbl.txt")
+train_x_indexes, train_y, train_lengths = dataUtils.read_and_sort_matlab_data(kalchbrenner_path+"train.txt",kalchbrenner_path+"train_lbl.txt")
+dev_x_indexes, dev_y, dev_lengths = dataUtils.read_and_sort_matlab_data(kalchbrenner_path+"valid.txt",kalchbrenner_path+"valid_lbl.txt")
+test_x_indexes, test_y, test_lengths = dataUtils.read_and_sort_matlab_data(kalchbrenner_path+"test.txt",kalchbrenner_path+"test_lbl.txt")
 
-# train data on GPU
-train_indexes_shared = T.cast(theano.shared(new_train_x_indexes,borrow=True), 'int32')
-train_labels_shared = T.cast(theano.shared(new_train_y,borrow=True), 'int32')
+# train data
 n_train_batches = len(train_lengths) / hyperparas['batch_size']
 
-#dev data on GPU
-new_dev_x_indexes_extended = dataUtils.pad_to_batch_size(new_dev_x_indexes,hyperparas['batch_size'])
-dev_indexes_shared = T.cast(theano.shared(new_dev_x_indexes_extended,borrow=True), 'int32')
-new_dev_y_extended = dataUtils.pad_to_batch_size(new_dev_y,hyperparas['batch_size'])
-dev_labels_shared = T.cast(theano.shared(new_dev_y_extended,borrow=True), 'int32')
-n_dev_batches = new_dev_x_indexes_extended.shape[0] / hyperparas['batch_size']
-n_dev_samples = len(new_dev_y)
+#dev data
+# to be able to do a correct evaluation, we pad a number of rows to get a multiple of the batch size
+dev_x_indexes_extended = dataUtils.pad_to_batch_size(dev_x_indexes,hyperparas['batch_size'])
+dev_y_extended = dataUtils.pad_to_batch_size(dev_y,hyperparas['batch_size'])
+n_dev_batches = dev_x_indexes_extended.shape[0] / hyperparas['batch_size']
+n_dev_samples = len(dev_y)
 dataUtils.extend_lenghts(dev_lengths,hyperparas['batch_size'])
 
-# test data on GPU
-new_test_x_indexes_extended = dataUtils.pad_to_batch_size(new_test_x_indexes,hyperparas['batch_size'])
-test_indexes_shared = T.cast(theano.shared(new_test_x_indexes_extended,borrow=True), 'int32')
-new_test_y_extended = dataUtils.pad_to_batch_size(new_test_y,hyperparas['batch_size'])
-test_labels_shared = T.cast(theano.shared(new_test_y_extended,borrow=True), 'int32')
-n_test_batches = new_test_x_indexes_extended.shape[0] / hyperparas['batch_size']
-n_test_samples = len(new_test_y)
+# test data
+test_x_indexes_extended = dataUtils.pad_to_batch_size(test_x_indexes,hyperparas['batch_size'])
+test_y_extended = dataUtils.pad_to_batch_size(test_y,hyperparas['batch_size'])
+n_test_batches = test_x_indexes_extended.shape[0] / hyperparas['batch_size']
+n_test_samples = len(test_y)
 dataUtils.extend_lenghts(test_lengths,hyperparas['batch_size'])
 
 ######################
@@ -82,8 +77,6 @@ dataUtils.extend_lenghts(test_lengths,hyperparas['batch_size'])
 print('Building the model')
 
 # allocate symbolic variables for the data
-indexes = T.ivector('indexes')  # index to a [mini]batch
-length = T.iscalar('length')
 X_batch = T.imatrix('x')
 y_batch = T.ivector('y')
 
@@ -109,22 +102,12 @@ updates, accumulated_grads = utils.adagrad(loss_train, all_params, hyperparas['l
 #updates = lasagne.updates.adagrad(loss_train, all_params, hyperparas['learning_rate'])
 
 
-train_model = theano.function(inputs=[indexes,length], outputs=loss_train,
-        updates=updates,
-        givens={
-            X_batch: train_indexes_shared[indexes,0:length],
-            y_batch: train_labels_shared[indexes]
-        })
+train_model = theano.function(inputs=[X_batch,y_batch], outputs=loss_train,updates=updates)
 
-valid_model = theano.function(inputs=[indexes,length], outputs=correct_predictions,
-        givens={
-            X_batch: dev_indexes_shared[indexes,0:length],
-            y_batch: dev_labels_shared[indexes]})
+valid_model = theano.function(inputs=[X_batch,y_batch], outputs=correct_predictions)
 
-test_model = theano.function(inputs=[indexes,length], outputs=correct_predictions,
-        givens={
-            X_batch: test_indexes_shared[indexes,0:length],
-            y_batch: test_labels_shared[indexes]})
+test_model = theano.function(inputs=[X_batch,y_batch], outputs=correct_predictions)
+
 
 
 ###############
@@ -136,32 +119,39 @@ print('Because of the default high validation frequency, only improvements are p
 train_error = 0
 best_validation_accuracy = 0
 epoch = 0
+batch_size = hyperparas["batch_size"]
 while (epoch < hyperparas['n_epochs']):
     epoch = epoch + 1
     permutation = numpy.random.permutation(n_train_batches)
     batch_counter = 0
     train_accuracy=0
     for minibatch_index in permutation:
-        train_accuracy += train_model(range(minibatch_index*hyperparas['batch_size'],(minibatch_index+1)*hyperparas['batch_size']),train_lengths[(minibatch_index+1)*hyperparas['batch_size']-1])
+        x_input = train_x_indexes[minibatch_index*batch_size:(minibatch_index+1)*batch_size,0:train_lengths[(minibatch_index+1)*batch_size-1]]
+        y_input = train_y[minibatch_index*batch_size:(minibatch_index+1)*batch_size]
+        train_model(x_input,y_input)
 
         if batch_counter>0 and batch_counter % hyperparas["valid_freq"] == 0:
             accuracy_valid=[]
             for minibatch_dev_index in range(n_dev_batches):
-                accuracy_valid.append(valid_model(range(minibatch_dev_index*hyperparas['batch_size'],(minibatch_dev_index+1)*hyperparas['batch_size']),dev_lengths[(minibatch_dev_index+1)*hyperparas['batch_size']-1]))
+                x_input = dev_x_indexes_extended[minibatch_dev_index*batch_size:(minibatch_dev_index+1)*batch_size,0:dev_lengths[(minibatch_dev_index+1)*batch_size-1]]
+                y_input = dev_y_extended[minibatch_dev_index*batch_size:(minibatch_dev_index+1)*batch_size]
+                accuracy_valid.append(valid_model(x_input,y_input))
 
-            #dirty code to correctly asses validation accuracy, last results in the array are predictions for the padding rows
+            #dirty code to correctly asses validation accuracy, last results in the array are predictions for the padding rows and can be dumped afterwards
             this_validation_accuracy = numpy.concatenate(accuracy_valid)[0:n_dev_samples].sum()/float(n_dev_samples)
 
             if this_validation_accuracy > best_validation_accuracy:
-                print("Train loss, "+str( (train_accuracy/hyperparas["valid_freq"]))+", validation accuracy: "+str(this_validation_accuracy)+"%")
+                print("Train loss, "+str( (train_accuracy/hyperparas["valid_freq"]))+", validation accuracy: "+str(this_validation_accuracy*100)+"%")
                 best_validation_accuracy = this_validation_accuracy
 
                 # test it
                 accuracy_test= []
                 for minibatch_test_index in range(n_test_batches):
-                    accuracy_test.append(test_model(range(minibatch_test_index*hyperparas['batch_size'],(minibatch_test_index+1)*hyperparas['batch_size']),test_lengths[(minibatch_test_index+1)*hyperparas['batch_size']-1]))
+                    x_input = test_x_indexes_extended[minibatch_test_index*batch_size:(minibatch_test_index+1)*batch_size,0:test_lengths[(minibatch_test_index+1)*batch_size-1]]
+                    y_input = test_y_extended[minibatch_test_index*batch_size:(minibatch_test_index+1)*batch_size]
+                    accuracy_test.append(test_model(x_input,y_input))
                 this_test_accuracy = numpy.concatenate(accuracy_test)[0:n_test_samples].sum()/float(n_test_samples)
-                print("Test accuracy: "+str(this_test_accuracy)+"%")
+                print("Test accuracy: "+str(this_test_accuracy*100)+"%")
 
             train_accuracy=0
         batch_counter+=1

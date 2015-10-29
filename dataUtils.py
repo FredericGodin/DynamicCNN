@@ -1,7 +1,7 @@
 __author__ = 'Frederic Godin  (frederic.godin@ugent.be / www.fredericgodin.com)'
 
 import numpy
-import theano
+
 
 def read_and_sort_matlab_data(x_file,y_file,padding_value=15448):
 
@@ -48,15 +48,15 @@ def read_and_sort_matlab_data(x_file,y_file,padding_value=15448):
             new_label_list.append(y_data[index])
             lengths.append(length)
 
-    return numpy.asarray(new_train_list,dtype=theano.config.floatX),numpy.asarray(new_label_list,dtype=theano.config.floatX),lengths
+    return numpy.asarray(new_train_list,dtype=numpy.int32),numpy.asarray(new_label_list,dtype=numpy.int32),lengths
 
 def pad_to_batch_size(array,batch_size):
     rows_extra = batch_size - (array.shape[0] % batch_size)
     if len(array.shape)==1:
-        padding = numpy.zeros((rows_extra,),dtype=theano.config.floatX)
+        padding = numpy.zeros((rows_extra,),dtype=numpy.int32)
         return numpy.concatenate((array,padding))
     else:
-        padding = numpy.zeros((rows_extra,array.shape[1]),dtype=theano.config.floatX)
+        padding = numpy.zeros((rows_extra,array.shape[1]),dtype=numpy.int32)
         return numpy.vstack((array,padding))
 
 def extend_lenghts(length_list,batch_size):
