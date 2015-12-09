@@ -10,13 +10,10 @@ To run it, simply run trainDCNN.py.
 If you are only interested in the layers such as Dynamic K-max pooling, or the 1D convolution, only use the DCNN package.
 
 
-### Paper issues
-Not all training details are clear from the paper. 
-A Matlab implementation is provided by the authors but that implementation is different from the paper.
-E.g., different number of layers and filters.
-Some training details are also different (or not reported) in the paper. 
-For example, the L2 regularization is very detailed (different values for different matrices).
-Adagrad was used to train the network but according to the code they reset the accumulated gradient.
+### Paper/implementation issues
+There is some discrepancy between the paper and Matlab code provided. Therefore, it was difficult to rely on the Matlab code for details not provided in the paper. For example:
+(1) different number of layers and filters.
+(2) the L2 regularization is not specified in the paper but is very detailed in the code (different values for different matrices). It would be hard to guess those values.
 
 ### Implementation details
 The layers of the network are wrapped as Lasagne layers and can be easily reused.
