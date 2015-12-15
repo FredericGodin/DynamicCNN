@@ -23,4 +23,4 @@ In the paper, some layer types were introduced which are not trivial for Theano.
 However, this operation is too heavy for selecting the K max values.
 
 Because of these implementation issues, a very heavy GpuContiguous operation is automatically introduced somewhere.
-If you have a solution or comments, I'm happy to support pull request ;)
+If you have a solution or comments, I'm happy to support pull requests ;)
