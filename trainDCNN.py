@@ -10,8 +10,6 @@ import dataUtils
 import networks
 import utils
 
-
-
 parser = argparse.ArgumentParser(description='Train a DCNN on the binary Stanford Sentiment dataset as specified in the Kalchbrenner \'14 paper. All the default values are taken from the paper or the Matlab code.')
 # training settings
 parser.add_argument("--learning_rate",type=float, default=0.1, help='Learning rate')
@@ -116,7 +114,6 @@ test_model = theano.function(inputs=[X_batch,y_batch], outputs=correct_predictio
 print('Started training')
 print('Because of the default high validation frequency, only improvements are printed.')
 
-train_error = 0
 best_validation_accuracy = 0
 epoch = 0
 batch_size = hyperparas["batch_size"]
@@ -124,11 +121,11 @@ while (epoch < hyperparas['n_epochs']):
     epoch = epoch + 1
     permutation = numpy.random.permutation(n_train_batches)
     batch_counter = 0
-    train_accuracy=0
+    train_loss=0
     for minibatch_index in permutation:
         x_input = train_x_indexes[minibatch_index*batch_size:(minibatch_index+1)*batch_size,0:train_lengths[(minibatch_index+1)*batch_size-1]]
         y_input = train_y[minibatch_index*batch_size:(minibatch_index+1)*batch_size]
-        train_model(x_input,y_input)
+        train_loss+=train_model(x_input,y_input)
 
         if batch_counter>0 and batch_counter % hyperparas["valid_freq"] == 0:
             accuracy_valid=[]
@@ -141,7 +138,7 @@ while (epoch < hyperparas['n_epochs']):
             this_validation_accuracy = numpy.concatenate(accuracy_valid)[0:n_dev_samples].sum()/float(n_dev_samples)
 
             if this_validation_accuracy > best_validation_accuracy:
-                print("Train loss, "+str( (train_accuracy/hyperparas["valid_freq"]))+", validation accuracy: "+str(this_validation_accuracy*100)+"%")
+                print("Train loss, "+str( (train_loss/hyperparas["valid_freq"]))+", validation accuracy: "+str(this_validation_accuracy*100)+"%")
                 best_validation_accuracy = this_validation_accuracy
 
                 # test it
@@ -153,7 +150,7 @@ while (epoch < hyperparas['n_epochs']):
                 this_test_accuracy = numpy.concatenate(accuracy_test)[0:n_test_samples].sum()/float(n_test_samples)
                 print("Test accuracy: "+str(this_test_accuracy*100)+"%")
 
-            train_accuracy=0
+            train_loss=0
         batch_counter+=1
 
     if hyperparas["adagrad_reset"] > 0:
