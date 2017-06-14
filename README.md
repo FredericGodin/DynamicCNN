@@ -1,7 +1,7 @@
 # Dynamic Convolutional Neural Networks
 
 ### Introduction
-This is a Theano implementation of the paper "A Convolutional Neural Network for Modelling Sentences" (<a href="http://nal.co/papers/Kalchbrenner_DCNN_ACL14">click here</a>).
+This is a Theano implementation of the paper "A Convolutional Neural Network for Modelling Sentences" (<a href="https://arxiv.org/abs/1404.2188">click here</a>).
 The example included is that of binary movie review sentiment classification (Stanford Sentiment Treebank).
 I was able to achieve a test set accuracy of 85-86% which is just below the reported accuracy of 86.8%.
 
